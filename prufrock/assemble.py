@@ -22,9 +22,18 @@ def run_assemble(source: Path, output: Path, client_name: str):
     output.mkdir(parents=True, exist_ok=True)
     prufrock_dir = source / "prufrock-output"
 
-    # Locate components
+    # Locate components — search common paths
     manifest = load_json(prufrock_dir / "manifest.json")
-    face_clusters = load_json(prufrock_dir / "faces" / "face-clusters.json")
+
+    face_clusters = None
+    for face_path in [
+        prufrock_dir / "faces" / "face-clusters.json",
+        *prufrock_dir.rglob("face-clusters.json"),
+    ]:
+        face_clusters = load_json(face_path)
+        if face_clusters:
+            break
+
     timeline_data = load_json(prufrock_dir / "timeline.json")
 
     # Collect transcriptions
