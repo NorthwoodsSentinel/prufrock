@@ -7,6 +7,8 @@ from prufrock.transcribe import run_transcribe
 from prufrock.faces import run_faces
 from prufrock.timeline import run_timeline
 from prufrock.assemble import run_assemble
+from prufrock.voice import run_voice
+from prufrock.companion import run_companion
 
 
 @click.group()
@@ -93,3 +95,34 @@ def assemble(source: Path, output: Path | None, client_name: str):
     """
     output = output or source / "prufrock-output" / "deliverable"
     run_assemble(source, output, client_name)
+
+
+@cli.command()
+@click.argument("source", type=click.Path(exists=True, path_type=Path))
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
+              help="Output directory for voice profile.")
+@click.option("--client-name", type=str, required=True, help="Client name.")
+def voice(source: Path, output: Path | None, client_name: str):
+    """Extract voice profile from recording or transcript.
+
+    SOURCE can be an audio file (mp3, wav, m4a), a transcript file (txt, md),
+    or a directory of transcripts. Outputs a voice-profile.json.
+    """
+    output = output or Path(str(source).rsplit(".", 1)[0] if source.is_file() else source) / "prufrock-output" / "voice"
+    run_voice(source, output, client_name)
+
+
+@cli.command()
+@click.argument("source", type=click.Path(exists=True, path_type=Path))
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
+              help="Output directory for companion spec.")
+@click.option("--client-name", type=str, required=True, help="Client name.")
+def companion(source: Path, output: Path | None, client_name: str):
+    """Generate AI writing companion from all pipeline outputs.
+
+    Reads transcriptions, timeline, face IDs, threads, and voice profile
+    from SOURCE/prufrock-output/ and generates a companion spec the client
+    can paste into Claude or ChatGPT to start writing their memoir.
+    """
+    output = output or source / "prufrock-output" / "companion"
+    run_companion(source, output, client_name)

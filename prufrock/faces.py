@@ -4,11 +4,59 @@ import shutil
 from pathlib import Path
 from collections import defaultdict
 
+from PIL import Image
 from rich.console import Console
 
 console = Console()
 
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".bmp", ".webp"}
+
+
+def is_likely_photo(path: Path) -> bool:
+    """Heuristic: distinguish actual photographs from book/document scans.
+
+    Book pages tend to be:
+    - Portrait orientation with tall aspect ratio
+    - High text density (lots of dark-on-light contrast in horizontal bands)
+    - Consistent background brightness
+
+    Photos tend to be:
+    - Landscape or square
+    - More color variation
+    - Less uniform structure
+    """
+    try:
+        img = Image.open(path)
+        w, h = img.size
+
+        # Very tall portrait images are likely book pages
+        aspect = h / w if w > 0 else 1
+        if aspect > 1.4:
+            return False
+
+        # Sample center strip for text-like patterns
+        # Convert to grayscale, check variance
+        gray = img.convert("L")
+        # Sample middle 60% of image
+        crop_y1 = int(h * 0.2)
+        crop_y2 = int(h * 0.8)
+        center = gray.crop((0, crop_y1, w, crop_y2))
+        pixels = list(center.getdata())
+
+        if not pixels:
+            return True
+
+        mean_val = sum(pixels) / len(pixels)
+        variance = sum((p - mean_val) ** 2 for p in pixels) / len(pixels)
+
+        # Book pages have high mean brightness (white paper) with moderate variance (text)
+        # Photos typically have lower mean and higher variance (scenes, colors)
+        if mean_val > 180 and variance < 3000:
+            return False  # Likely a bright document/book page
+
+        return True
+    except Exception:
+        return True  # If we can't analyze, include it
 
 
 def run_faces(source: Path, output: Path, tolerance: float):
@@ -27,16 +75,30 @@ def run_faces(source: Path, output: Path, tolerance: float):
 
     output.mkdir(parents=True, exist_ok=True)
 
-    images = sorted(
+    all_images = sorted(
         f for f in source.rglob("*")
         if f.is_file() and f.suffix.lower() in PHOTO_EXTS
     )
 
-    if not images:
+    if not all_images:
         console.print("[yellow]No images found.[/yellow]")
         return
 
-    console.print(f"Found [bold]{len(images)}[/bold] images\n")
+    # Filter out likely book/document pages
+    images = []
+    skipped = 0
+    for img in all_images:
+        if is_likely_photo(img):
+            images.append(img)
+        else:
+            skipped += 1
+
+    console.print(f"Found [bold]{len(all_images)}[/bold] images, [bold]{skipped}[/bold] skipped (book/document pages)")
+    console.print(f"Scanning [bold]{len(images)}[/bold] likely photographs\n")
+
+    if not images:
+        console.print("[yellow]No photographs detected after filtering.[/yellow]")
+        return
 
     # Detect faces and compute encodings
     all_encodings = []
