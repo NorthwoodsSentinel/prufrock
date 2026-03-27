@@ -84,6 +84,12 @@ MIT
 
 ---
 
-*Built by [Northwoods Sentinel Labs](https://northwoodssentinel.com)*
-
 *"Do I dare disturb the universe?"*
+
+---
+
+## Northwoods Sentinel Labs
+
+Part of the [Northwoods Sentinel Labs](https://northwoodssentinel.com) ecosystem — open-source tools for human-centered AI.
+
+[Blog](https://northwoodssentinel.com) · [Substack](https://substack.com/@chewvala) · [GitHub](https://github.com/NorthwoodsSentinel)
