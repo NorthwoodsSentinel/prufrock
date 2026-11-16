@@ -1,9 +1,10 @@
 """Assemble — merge all outputs into client deliverable."""
 import json
+import sys
 from pathlib import Path
 from datetime import datetime
 
-from anthropic import Anthropic
+from .llm import complete
 from rich.console import Console
 
 console = Console()
@@ -37,36 +38,22 @@ def load_json(path: Path) -> dict | list | None:
 
 
 def analyze_threads(transcription_text: str, client_name: str) -> str | None:
-    """Use Claude to analyze transcriptions for narrative threads."""
+    """Analyze transcriptions for narrative threads. Returns None only when there is too little text; raises on model failure."""
     if not transcription_text or len(transcription_text.strip()) < 500:
         return None
 
-    try:
-        client = Anthropic()
-
-        # Truncate if very large — keep first and last sections
-        max_chars = 100_000
-        if len(transcription_text) > max_chars:
-            half = max_chars // 2
-            transcription_text = (
-                transcription_text[:half]
-                + "\n\n[... middle sections omitted for length ...]\n\n"
-                + transcription_text[-half:]
-            )
-
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=THREAD_ANALYSIS_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": f"Client: {client_name}\n\n---\n\n{transcription_text}",
-            }],
+    # Truncate if very large — keep first and last sections
+    max_chars = 100_000
+    if len(transcription_text) > max_chars:
+        half = max_chars // 2
+        transcription_text = (
+            transcription_text[:half]
+            + "\n\n[... middle sections omitted for length ...]\n\n"
+            + transcription_text[-half:]
         )
-        return response.content[0].text
-    except Exception as e:
-        console.print(f"[yellow]Thread analysis failed: {e}[/yellow]")
-        return None
+
+    return complete(THREAD_ANALYSIS_PROMPT, f"Client: {client_name}\n\n---\n\n{transcription_text}",
+                    level="standard", timeout_s=300, max_tokens=4096)
 
 
 def run_assemble(source: Path, output: Path, client_name: str):
@@ -163,11 +150,16 @@ def run_assemble(source: Path, output: Path, client_name: str):
         index_lines.append("*No timeline found. Run `prufrock timeline` first.*\n")
 
     # Memoir scaffold — AI thread analysis
+    thread_error = None
     index_lines.append("## Memoir Scaffold\n")
 
     if transcription_text:
         console.print("Analyzing transcriptions for narrative threads...")
-        threads = analyze_threads(transcription_text, client_name)
+        try:
+            threads = analyze_threads(transcription_text, client_name)
+        except Exception as e:
+            threads, thread_error = None, str(e)
+            console.print(f"[bold red]Thread analysis failed: {e}[/bold red]")
 
         if threads:
             threads_out = output / "memoir-threads.md"
@@ -177,7 +169,8 @@ def run_assemble(source: Path, output: Path, client_name: str):
             index_lines.append("*Full analysis: memoir-threads.md*\n")
         else:
             index_lines.extend([
-                "*Thread analysis unavailable. Set ANTHROPIC_API_KEY to enable.*\n",
+                (f"*Thread analysis FAILED: {thread_error}. Re-run assemble.*\n" if thread_error
+                 else "*Too little transcribed text for thread analysis (under 500 characters).*\n"),
                 "### Suggested Threads\n",
                 "1. ___________________",
                 "2. ___________________",
@@ -208,4 +201,7 @@ def run_assemble(source: Path, output: Path, client_name: str):
     index_path.write_text("\n".join(index_lines))
 
     console.print(f"Deliverable: [bold]{output}[/bold]")
+    if thread_error:
+        console.print("[bold red]Assembled WITHOUT thread analysis (it failed). Exit 1.[/bold red]")
+        sys.exit(1)
     console.print(f"Index: [bold]{index_path}[/bold]\n")

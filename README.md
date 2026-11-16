@@ -32,7 +32,6 @@ pip install face-recognition  # requires dlib
 prufrock intake ./client-box/
 
 # 2. Transcribe handwritten pages
-export ANTHROPIC_API_KEY=sk-...
 prufrock transcribe ./client-box/scanned-pages/ \
   --context "Family: John (father), Pat (mother), Rob, Thomas, Bill, Kathleen. Location: Warwick, NY."
 
@@ -72,10 +71,19 @@ Client Archive + Memoir Scaffold
 | **Story** | Archive + thread analysis + memoir scaffold + walkthrough |
 | **Companion** | Story + custom AI spec with client voice profile |
 
+## Model backend
+
+Prufrock's model calls (`transcribe`, `voice`, thread analysis in `assemble`) go through one helper, `prufrock/llm.py`.
+
+- **Default: `PRUFROCK_BACKEND=fleet`.** Requests go through `prufrock/fleet_bridge.ts` (needs `bun`) to a PAI install's `Inference.ts`, which runs on a Claude subscription, not an API key. It looks for Inference.ts at `$PRUFROCK_INFERENCE`, then `$PAI_DIR/TOOLS/Inference.ts`, then `$HOME/.claude/PAI/TOOLS/Inference.ts`.
+- **`PRUFROCK_BACKEND=api`** uses the Anthropic API directly. Install with `pip install -e ".[api]"` and set `ANTHROPIC_API_KEY`. It's never used unless you set it.
+
+The fleet backend reads images through Claude Code's Read tool: JPEG, PNG, GIF and WebP. Convert TIFF or BMP scans first.
+
 ## Requirements
 
 - Python 3.10+
-- Anthropic API key (for transcription)
+- `bun` and a PAI install (default fleet backend), or an Anthropic API key with `PRUFROCK_BACKEND=api`
 - dlib + face_recognition (for facial clustering)
 
 ## License

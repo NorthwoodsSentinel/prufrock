@@ -1,10 +1,11 @@
 """Voice — extract voice profile from zoom recording or transcript."""
 import json
+import sys
 import re
 from pathlib import Path
 from collections import Counter
 
-from anthropic import Anthropic
+from .llm import complete
 from rich.console import Console
 
 console = Console()
@@ -77,23 +78,12 @@ def transcribe_audio(audio_path: Path, output_dir: Path) -> Path | None:
 def analyze_voice(transcript: str, client_name: str) -> dict | None:
     """Use Claude to analyze transcript for voice patterns."""
     try:
-        client = Anthropic()
-
         # Truncate if needed
         if len(transcript) > 80_000:
             transcript = transcript[:40_000] + "\n\n[...]\n\n" + transcript[-40_000:]
 
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=VOICE_ANALYSIS_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": f"Speaker: {client_name}\n\nTranscript:\n\n{transcript}",
-            }],
-        )
-
-        text = response.content[0].text
+        text = complete(VOICE_ANALYSIS_PROMPT, f"Speaker: {client_name}\n\nTranscript:\n\n{transcript}",
+                        level="standard", timeout_s=300, max_tokens=4096)
 
         # Try to extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', text)
@@ -172,14 +162,19 @@ def run_voice(source: Path, output: Path, client_name: str):
         "top_distinctive_words": distinctive_words.most_common(30),
     }
 
+    # A profile from an earlier run must never survive a failed one.
+    (output / "voice-profile.json").unlink(missing_ok=True)
+
     # AI voice analysis
     console.print("Analyzing voice patterns with Claude...")
     voice_profile = analyze_voice(transcript, client_name)
 
-    if voice_profile:
-        voice_profile["statistics"] = stats
-    else:
-        voice_profile = {"statistics": stats, "note": "AI analysis unavailable"}
+    if not voice_profile:
+        stats_path = output / "voice-stats.json"
+        stats_path.write_text(json.dumps({"statistics": stats}, indent=2))
+        console.print(f"[bold red]Voice analysis failed. No voice-profile.json written. Statistics only: {stats_path}[/bold red]")
+        sys.exit(1)
+    voice_profile["statistics"] = stats
 
     # Write outputs
     profile_path = output / "voice-profile.json"
