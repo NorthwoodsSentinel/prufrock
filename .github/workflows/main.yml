@@ -1,0 +1,107 @@
+# CI for prufrock (NOR-391).
+#
+# Shaped after the MCP Inspector's CI workflow
+# (modelcontextprotocol/inspector, commit d330df96, .github/workflows/main.yml,
+# blob c1eeb58a6775d95cce43f6f99fc09cfec2dfccc1): the same file name and
+# workflow name, least-privilege `permissions`, a pinned runtime stated once,
+# and a `timeout-minutes` on the job. Every action is pinned to a commit SHA
+# with its exact release (his rule for credentialed jobs, applied to every job
+# here; AGENTS.md says why). The Python steps come from
+# modelcontextprotocol/servers' .github/workflows/python.yml (commit e1d154ee,
+# blob 219e515924c33ab4b888ed57a0177495955f5537): uv through
+# astral-sh/setup-uv on his major (v7), Python from `.python-version` through
+# actions/setup-python, Node for the gate scripts. Where this file differs,
+# the reason is beside the line.
+#
+# One job runs every stage of `npm run local:gate` except `local:dco`:
+# `validate` (the action-pin guard, the gate scripts' own tests, then the
+# Python chain: uv sync --locked, ruff check, ruff format --check, pyright,
+# pytest, uv build), then `coverage` (pytest under coverage.py with branch
+# coverage, every file >= 90% on lines and on branches, then the scope check).
+# `local:dco` reads `origin/main`, which this shallow checkout does not have,
+# so it stays local (the Inspector's reason); a pull request's commits are
+# checked by .github/workflows/dco.yml instead. No Inspector smoke: prufrock
+# is not an MCP server.
+#
+# This workflow holds no secret, has a read-only token, and deploys nothing.
+# The one thing it saves is setup-uv's dependency cache (its default,
+# `enable-cache: auto`, as in the servers repo): an Actions cache, scoped by
+# GitHub to the branch that wrote it, so a pull request's cache is not read by
+# `main`. It
+# never calls a model: the tests replace the fleet bridge and the anthropic
+# package with fakes, so nothing here needs Bun, a PAI install or an API key.
+#
+# Limits, accepted: a pull request that edits this file, or
+# the scripts it runs, is judged by the edited version (the control is review
+# of the diff). The check is not REQUIRED for merging until the owner sets a
+# repository ruleset; the job name `validate` below is the name that ruleset
+# would match, so rename both together or not at all.
+
+name: CI
+
+on:
+  # `pull_request`, not `pull_request_target`: the workflow runs from the pull
+  # request's own revision with a read-only token and no secret.
+  # No branch or path filter: a required check that a filter skips would stay
+  # "expected" forever.
+  pull_request:
+  # The Inspector uses a bare `push:`. Here that would run every pull request
+  # branch twice (once for the push, once for the pull request), so pushes are
+  # limited to the branch pull requests merge into.
+  push:
+    branches: [main]
+
+# Least privilege for GITHUB_TOKEN (the Inspector's block, verbatim).
+permissions:
+  contents: read
+
+env:
+  # The one pinned uv, stated once. uv.lock was written by this version; bump
+  # both together. (The servers repo leaves setup-uv on its default.)
+  CI_UV_VERSION: "0.13.8"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    # PROVISIONAL: no run of this workflow had been observed when it was
+    # written. The rule (AGENTS.md) is roughly twice the slowest observed run,
+    # rounded up to the next five minutes, stated with the range it was read
+    # from. The only measurement so far is local: building dlib from source
+    # (face-recognition's dependency; PyPI ships dlib as an sdist only) took
+    # 4 min 57 s on a developer Mac, and every other stage under a minute once
+    # installed. 30 minutes is a hung-job guard for an uncached first build on
+    # a slower runner, not a flake remedy. Re-size it from observed runs.
+    timeout-minutes: 30
+
+    steps:
+      # Every action is pinned to a commit SHA with its exact release, in every
+      # job of this repo; `npm run verify:action-pins` enforces it. Each SHA
+      # and release below came from one tag lookup (2026-11-15).
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes; do not leave the token in the checkout.
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: ${{ env.CI_UV_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.x"
+
+      - name: Install the gate's Node dependency
+        # `yaml`, which the action-pin guard parses workflows with, from
+        # package-lock.json, without running any install script.
+        run: npm ci --ignore-scripts
+
+      - name: Run the gate (every stage of local:gate but the local-only local:dco)
+        run: npm run validate && npm run coverage

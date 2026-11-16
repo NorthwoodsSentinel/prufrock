@@ -1,8 +1,9 @@
 """Timeline — extract dates and construct chronology."""
+
 import json
 import re
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from rich.console import Console
 
@@ -11,19 +12,31 @@ console = Console()
 # Patterns for date extraction from transcriptions
 DATE_PATTERNS = [
     # MM/DD/YY or MM/DD/YYYY
-    (r'\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})\b', "mdy"),
+    (r"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})\b", "mdy"),
     # Month DD, YYYY
-    (r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b', "month_name"),
+    (
+        r"\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b",
+        "month_name",
+    ),
     # YYYY-MM-DD
-    (r'\b(\d{4})-(\d{2})-(\d{2})\b', "iso"),
+    (r"\b(\d{4})-(\d{2})-(\d{2})\b", "iso"),
     # Handwritten style: 1/1/96, 11/21/94
-    (r'\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{2})\b', "mdy_short"),
+    (r"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{2})\b", "mdy_short"),
 ]
 
 MONTH_MAP = {
-    "january": 1, "february": 2, "march": 3, "april": 4,
-    "may": 5, "june": 6, "july": 7, "august": 8,
-    "september": 9, "october": 10, "november": 11, "december": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
 }
 
 
@@ -67,11 +80,13 @@ def extract_dates_from_text(text: str) -> list[dict]:
 
                 if 1 <= month <= 12 and 1 <= day <= 31 and 1800 <= year <= 2100:
                     date_str = f"{year}-{month:02d}-{day:02d}"
-                    found.append({
-                        "date": date_str,
-                        "raw": match.group(0),
-                        "context": context,
-                    })
+                    found.append(
+                        {
+                            "date": date_str,
+                            "raw": match.group(0),
+                            "context": context,
+                        }
+                    )
             except (ValueError, TypeError):
                 continue
 
@@ -93,16 +108,20 @@ def extract_exif_dates(source: Path) -> list[dict]:
         try:
             with open(f, "rb") as fh:
                 tags = exifread.process_file(fh, stop_tag="DateTimeOriginal")
-                date_tag = tags.get("EXIF DateTimeOriginal") or tags.get("Image DateTime")
+                date_tag = tags.get("EXIF DateTimeOriginal") or tags.get(
+                    "Image DateTime"
+                )
                 if date_tag:
                     dt = datetime.strptime(str(date_tag), "%Y:%m:%d %H:%M:%S")
-                    found.append({
-                        "date": dt.strftime("%Y-%m-%d"),
-                        "raw": str(date_tag),
-                        "context": f"EXIF from {f.name}",
-                        "source": str(f.name),
-                    })
-        except Exception:
+                    found.append(
+                        {
+                            "date": dt.strftime("%Y-%m-%d"),
+                            "raw": str(date_tag),
+                            "context": f"EXIF from {f.name}",
+                            "source": str(f.name),
+                        }
+                    )
+        except Exception:  # noqa: BLE001, S112  # a photo whose EXIF cannot be read contributes no date
             continue
 
     return found
@@ -110,7 +129,9 @@ def extract_exif_dates(source: Path) -> list[dict]:
 
 def run_timeline(source: Path, output: Path):
     """Build timeline from transcriptions and EXIF data."""
-    console.print(f"\n[bold]Prufrock Timeline[/bold] — building chronology from {source}\n")
+    console.print(
+        f"\n[bold]Prufrock Timeline[/bold] — building chronology from {source}\n"
+    )
 
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

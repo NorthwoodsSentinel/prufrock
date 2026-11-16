@@ -1,14 +1,16 @@
 """Prufrock CLI — memoir pipeline from physical artifacts."""
-import click
+
 from pathlib import Path
 
-from prufrock.intake import run_intake
-from prufrock.transcribe import run_transcribe
-from prufrock.faces import run_faces
-from prufrock.timeline import run_timeline
+import click
+
 from prufrock.assemble import run_assemble
-from prufrock.voice import run_voice
 from prufrock.companion import run_companion
+from prufrock.faces import run_faces
+from prufrock.intake import run_intake
+from prufrock.timeline import run_timeline
+from prufrock.transcribe import run_transcribe
+from prufrock.voice import run_voice
 
 
 @click.group()
@@ -19,13 +21,17 @@ def cli():
     Transform boxes of physical artifacts into searchable archives,
     memoir scaffolds, and AI writing companions.
     """
-    pass
 
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for processed files. Defaults to SOURCE/prufrock-output/")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for processed files. Defaults to SOURCE/prufrock-output/",
+)
 def intake(source: Path, output: Path | None):
     """Inventory and process incoming materials.
 
@@ -38,11 +44,20 @@ def intake(source: Path, output: Path | None):
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for transcriptions.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for transcriptions.",
+)
 @click.option("--batch-size", default=10, help="Images per transcription batch.")
-@click.option("--context", type=str, default=None,
-              help="Context string for the transcriber (family names, dates, locations).")
+@click.option(
+    "--context",
+    type=str,
+    default=None,
+    help="Context string for the transcriber (family names, dates, locations).",
+)
 def transcribe(source: Path, output: Path | None, batch_size: int, context: str | None):
     """Transcribe handwritten pages using Claude Vision.
 
@@ -55,9 +70,16 @@ def transcribe(source: Path, output: Path | None, batch_size: int, context: str 
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for face clusters.")
-@click.option("--tolerance", default=0.6, help="Face matching tolerance (lower = stricter).")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for face clusters.",
+)
+@click.option(
+    "--tolerance", default=0.6, help="Face matching tolerance (lower = stricter)."
+)
 def faces(source: Path, output: Path | None, tolerance: float):
     """Cluster faces across all photos.
 
@@ -70,8 +92,13 @@ def faces(source: Path, output: Path | None, tolerance: float):
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output file for timeline.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output file for timeline.",
+)
 def timeline(source: Path, output: Path | None):
     """Extract dates and construct chronological timeline.
 
@@ -84,9 +111,16 @@ def timeline(source: Path, output: Path | None):
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for final deliverable.")
-@click.option("--client-name", type=str, required=True, help="Client name for the deliverable.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for final deliverable.",
+)
+@click.option(
+    "--client-name", type=str, required=True, help="Client name for the deliverable."
+)
 def assemble(source: Path, output: Path | None, client_name: str):
     """Assemble all outputs into client deliverable.
 
@@ -99,8 +133,13 @@ def assemble(source: Path, output: Path | None, client_name: str):
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for voice profile.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for voice profile.",
+)
 @click.option("--client-name", type=str, required=True, help="Client name.")
 def voice(source: Path, output: Path | None, client_name: str):
     """Extract voice profile from recording or transcript.
@@ -108,14 +147,24 @@ def voice(source: Path, output: Path | None, client_name: str):
     SOURCE can be an audio file (mp3, wav, m4a), a transcript file (txt, md),
     or a directory of transcripts. Outputs a voice-profile.json.
     """
-    output = output or Path(str(source).rsplit(".", 1)[0] if source.is_file() else source) / "prufrock-output" / "voice"
+    output = (
+        output
+        or Path(str(source).rsplit(".", 1)[0] if source.is_file() else source)
+        / "prufrock-output"
+        / "voice"
+    )
     run_voice(source, output, client_name)
 
 
 @cli.command()
 @click.argument("source", type=click.Path(exists=True, path_type=Path))
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output directory for companion spec.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory for companion spec.",
+)
 @click.option("--client-name", type=str, required=True, help="Client name.")
 def companion(source: Path, output: Path | None, client_name: str):
     """Generate AI writing companion from all pipeline outputs.

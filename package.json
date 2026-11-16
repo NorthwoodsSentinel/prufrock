@@ -1,0 +1,20 @@
+{
+  "name": "prufrock-gate",
+  "private": true,
+  "type": "module",
+  "description": "The gate's command runner only (NOR-391). Prufrock itself is Python; these npm scripts run the checks, in the shape of modelcontextprotocol/servers' root package.json. See AGENTS.md.",
+  "scripts": {
+    "verify:action-pins": "node scripts/verify-action-pins.mjs",
+    "test:scripts": "node --test scripts/validate-py.test.mjs && node --test scripts/coverage-py.test.mjs && node --test scripts/lib/py-coverage.test.mjs && node --test scripts/verify-coverage-scope-py.test.mjs && node --test scripts/verify-action-pins.test.mjs && node --test scripts/dco-check.test.mjs && node --test scripts/lib/main-module.test.mjs",
+    "format": "uv run --frozen ruff format .",
+    "validate:py": "node scripts/validate-py.mjs",
+    "validate": "npm run verify:action-pins && npm run test:scripts && npm run validate:py",
+    "coverage": "node scripts/coverage-py.mjs && node scripts/verify-coverage-scope-py.mjs",
+    "dco:check": "node scripts/dco-check.mjs",
+    "local:dco": "node scripts/dco-check.mjs --base origin/main",
+    "local:gate": "npm run validate && npm run local:dco && npm run coverage"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
+  }
+}
