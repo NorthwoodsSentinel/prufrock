@@ -53,6 +53,13 @@
 // written: `main` is this repo's develop branch too (AGENTS.md, branch table),
 // and `local:dco` uses `--base origin/main`. The design it names is WALL-E's,
 // kept verbatim in docs/; this repo's record: PROVENANCE-CHECK.md, section 4.
+//
+// --- In prufrock (NOR-391) -------------------------------------------------
+// Copied unchanged from NorthwoodsSentinel/fleet-mcp origin/main f1bea96,
+// scripts/dco-check.mjs (blob 5338fedd25763bc4b7cb454c1eb432d7deaf8a1d). This
+// paragraph is the only edit. `main` is this repo's default branch, every PR
+// targets it, and `local:dco` uses `--base origin/main`, so the blocks above
+// hold as written. Record: PROVENANCE.md.
 
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";

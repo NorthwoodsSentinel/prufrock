@@ -1,3 +1,8 @@
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/coverage-py.test.mjs`
+// (commit e1d154ee, blob 2307575ba5b9d42f15d6fbf7e1d7e732395a9f7b), copied
+// byte-for-byte and then edited with the script: one expectation in the
+// `summarize` test drops the `src/<server>/` prefix (edit 2 there), and one
+// test is added for the no-arguments rule. Every other test is his.
 /**
  * Unit tests for scripts/coverage-py.mjs (#4855), the runner behind
  * `npm run coverage:py`. No `uv` needed: the command runner, the report
@@ -5,8 +10,10 @@
  * tested in lib/py-coverage.test.mjs.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { REPORT, STEPS, coverServers, summarize } from "./coverage-py.mjs";
 
@@ -156,9 +163,21 @@ describe("summarize", () => {
     assert.deepEqual(lines, [
       "  PASS  fetch",
       "  FAIL  time — per-file check (1 below 90%)",
-      "          src/time/src/mcp_server_time/server.py: lines 69.7% (…) is below 90%",
+      "          src/mcp_server_time/server.py: lines 69.7% (…) is below 90%",
       "  FAIL  git — sync (exit 2)",
     ]);
     assert.equal(exitCode, 1);
+  });
+});
+
+// prufrock (NOR-391): the command takes no arguments.
+describe("main", () => {
+  it("refuses an argument instead of ignoring it", () => {
+    const script = fileURLToPath(new URL("./coverage-py.mjs", import.meta.url));
+    const result = spawnSync(process.execPath, [script, "fetch"], {
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /takes no arguments/);
   });
 });

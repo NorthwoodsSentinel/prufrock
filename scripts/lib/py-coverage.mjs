@@ -1,3 +1,10 @@
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/lib/py-coverage.mjs`
+// (commit e1d154ee03703da9bb00b81f36a6704cae6caa3d, blob
+// 2ba4af3925181da5fa01cb001c39d8e42e38d3e9), copied unchanged; this paragraph
+// is the only edit. It is the source of this repo's coverage bar: >= 90% per
+// file on lines and on branches, the two dimensions coverage.py measures (his
+// reasoning below says why the TypeScript gate's four collapse to two).
+//
 /**
  * The per-file coverage check for the Python servers (#4855): reads the
  * `coverage.json` that `pytest --cov --cov-report=json` writes, and fails any

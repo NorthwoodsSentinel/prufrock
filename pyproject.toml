@@ -26,3 +26,31 @@ api = ["anthropic>=0.40"]
 
 [project.scripts]
 prufrock = "prufrock.cli:cli"
+
+# The gate's tools (NOR-391). Copied from the Python servers in
+# modelcontextprotocol/servers at e1d154ee (src/git/pyproject.toml): the same
+# dev group, run through uv with a committed uv.lock. See PROVENANCE.md.
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+    "ruff>=0.17.3",
+    "pytest>=8.0.0",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+# Branch coverage on, measured over the whole package, so files no test
+# imports are still reported (as 0%). scripts/lib/py-coverage.mjs refuses a
+# report measured without branches and fails any file below 90% on lines or
+# on branches.
+[tool.coverage.run]
+branch = true
+source = ["prufrock"]
+
+[tool.coverage.report]
+show_missing = true

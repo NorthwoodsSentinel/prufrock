@@ -1,4 +1,15 @@
 #!/usr/bin/env node
+// prufrock (NOR-391): NorthwoodsSentinel/fleet-mcp's copy of this file
+// (origin/main f1bea96, blob 011a04c44ce9769bd15f8bfa82cb27d89162e957),
+// copied byte-for-byte in the commit before this one and then edited. Its
+// header follows unchanged, and so does every line of code. Edits: this
+// paragraph, and the ticket named in the failure message (NOR-391 instead of
+// fleet-mcp's NOR-355). fleet-mcp's edit 1 (every job is checked) holds here
+// for this repo's own reason: the owner's scope for NOR-381 asks for every
+// action pinned to a SHA with its exact version, and this is a public repo
+// whose CI result vouches for the code people install. No job here holds a
+// credential; the OK line still counts credentialed jobs.
+//
 // fleet-mcp (NOR-355): this file is WALL-E's `scripts/verify-action-pins.mjs`
 // (NorthwoodsSentinel/walle, origin/main 5fb8747, blob
 // 9aea9a383b72c27d422584e1224bd6de3baa415b), copied byte-for-byte and then
@@ -347,7 +358,7 @@ export function main(root = repoRoot, hooks = {}) {
       `verify:action-pins — ${problems.length} problem(s); every action ref must be SHA-pinned:\n` +
         problems.join("\n") +
         "\n\nIn this repo every job, credentialed or not, runs only immutable refs" +
-        "\n(NOR-355; the source's rule covers credentialed jobs only). Pin each as" +
+        "\n(NOR-391; the source's rule covers credentialed jobs only). Pin each as" +
         "\n  uses: owner/repo@<40-hex sha> # vX.Y.Z" +
         "\nresolving the SHA and the exact release from the same tag lookup. A local" +
         "\n`./…` ref and a YAML alias are findings too: spell the pinned ref out.",

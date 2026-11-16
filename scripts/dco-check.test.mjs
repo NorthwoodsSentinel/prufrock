@@ -17,6 +17,10 @@
 // 858418417bfc542d8d3f7d0b76416b4bfdcf5f8a). This paragraph is the only edit.
 // Run here by `npm run test:scripts`, one `node --test <file>` per file.
 // Record: PROVENANCE-CHECK.md, section 4.
+//
+// In prufrock (NOR-391): copied unchanged from NorthwoodsSentinel/fleet-mcp
+// origin/main f1bea96, scripts/dco-check.test.mjs (blob
+// 7fd4bd08dd3c7bddf14c1076ad7f2a7894ccec50). This paragraph is the only edit.
 
 import { after, test } from "node:test";
 import assert from "node:assert/strict";

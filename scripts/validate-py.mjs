@@ -1,4 +1,23 @@
 #!/usr/bin/env node
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/validate-py.mjs`
+// (commit e1d154ee03703da9bb00b81f36a6704cae6caa3d, blob
+// ceef6d435cc6ab4db7a8379552e6ff51b92918ee), copied byte-for-byte in the
+// commit before this one and then edited. His header follows unchanged; read
+// "each server" as "this repository", which is ONE Python package at its root
+// (pyproject.toml, uv.lock and .python-version beside this folder).
+//
+// What differs, and why:
+//
+//   1. No discovery. `discoverServers` and `selectServers` are removed: there
+//      is one package, so there is nothing to find or choose, and the command
+//      takes no arguments (an argument is an error, never silently ignored).
+//      `main()` runs the chain once with the repo root as its directory,
+//      through his unchanged `validateServers`, labelled with the checkout's
+//      folder name.
+//   2. `STEPS`, `runCommand`, `validateServers` and `summarize` are his,
+//      unchanged. The chain is still sync --locked, ruff check, ruff format
+//      --check, pyright, pytest, uv build.
+//
 /**
  * The Python gate: one `validate` chain per Python server, and one command
  * that runs it for every server (#4865).
@@ -30,7 +49,6 @@
  * checking.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -46,47 +64,6 @@ export const STEPS = [
   { name: "pytest", argv: ["uv", "run", "--frozen", "pytest"] },
   { name: "build", argv: ["uv", "build"] },
 ];
-
-/**
- * Every directory directly under `srcDir` that holds a `pyproject.toml`,
- * sorted so the run order is stable.
- * @param {string} srcDir
- * @returns {string[]}
- */
-export function discoverServers(srcDir) {
-  return readdirSync(srcDir, { withFileTypes: true })
-    .filter(
-      (entry) =>
-        entry.isDirectory() &&
-        existsSync(path.join(srcDir, entry.name, "pyproject.toml")),
-    )
-    .map((entry) => entry.name)
-    .sort();
-}
-
-/**
- * Resolve the servers to validate from the CLI arguments. No arguments means
- * every discovered server; a name that is not a Python server is an error,
- * never a silent skip.
- * @param {string[]} args
- * @param {string[]} available
- * @returns {{ servers: string[] } | { error: string }}
- */
-export function selectServers(args, available) {
-  if (available.length === 0) {
-    return { error: "no Python servers found (no src/*/pyproject.toml)" };
-  }
-  if (args.length === 0) return { servers: available };
-  const unknown = args.filter((name) => !available.includes(name));
-  if (unknown.length > 0) {
-    return {
-      error: `not a Python server: ${unknown.join(
-        ", ",
-      )} (known: ${available.join(", ")})`,
-    };
-  }
-  return { servers: args };
-}
 
 /**
  * Run one command and report whether it succeeded.
@@ -177,16 +154,19 @@ function main() {
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
   );
-  const srcDir = path.join(repoRoot, "src");
-  const selection = selectServers(
-    process.argv.slice(2),
-    discoverServers(srcDir),
-  );
-  if ("error" in selection) {
-    console.error(`[validate:py] ${selection.error}`);
+  // Edit 1: one package, at the repo root; no arguments.
+  if (process.argv.length > 2) {
+    console.error(
+      `[validate:py] takes no arguments (this repo is one package); got: ${process.argv
+        .slice(2)
+        .join(" ")}`,
+    );
     return 2;
   }
-  const results = validateServers({ servers: selection.servers, srcDir });
+  const results = validateServers({
+    servers: [path.basename(repoRoot)],
+    srcDir: path.dirname(repoRoot),
+  });
   const { lines, exitCode } = summarize(results);
   console.log(["\n[validate:py] summary", ...lines].join("\n"));
   return exitCode;

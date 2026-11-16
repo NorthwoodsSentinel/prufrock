@@ -1,3 +1,7 @@
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/lib/py-coverage.test.mjs`
+// (commit e1d154ee, blob 78da52dd5d77d9ca2a4f6ab93f208f7f34d1a88a), copied
+// unchanged; this paragraph is the only edit.
+//
 /**
  * Unit tests for scripts/lib/py-coverage.mjs (#4855), the per-file check
  * behind `npm run coverage:py`. Run with `node --test` — no `uv` or Python

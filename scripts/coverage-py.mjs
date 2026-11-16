@@ -1,4 +1,25 @@
 #!/usr/bin/env node
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/coverage-py.mjs`
+// (commit e1d154ee03703da9bb00b81f36a6704cae6caa3d, blob
+// 94e320bc080752550506d57a494befa3875265f6), copied byte-for-byte in the
+// commit before this one and then edited. His header follows unchanged; read
+// "each server" as "this repository", one Python package at its root, whose
+// `[tool.coverage.run]` (branch = true, source = ["prufrock"]) is in
+// pyproject.toml.
+//
+// What differs, and why:
+//
+//   1. No discovery, as in `validate-py.mjs` (edit 1 there): one package at
+//      the repo root, no arguments; `main()` calls his unchanged
+//      `coverServers` once, with the repo root as its directory.
+//   2. `summarize` prints each failing file as the report names it
+//      (`prufrock/llm.py`), without his `src/<server>/` prefix, which here
+//      would name a path that does not exist.
+//   3. The scope check (`scripts/verify-coverage-scope-py.mjs`, OURS) runs
+//      after this one in `npm run coverage`: it fails on any tracked file in
+//      the package that the report does not measure and no exact-path
+//      exclusion names.
+//
 /**
  * The Python coverage gate (#4855): runs each Python server's suite under
  * coverage and fails any file below 90% on lines or on branches.
@@ -39,7 +60,7 @@ import {
   formatTable,
   readCoverageReport,
 } from "./lib/py-coverage.mjs";
-import { discoverServers, runCommand, selectServers } from "./validate-py.mjs";
+import { runCommand } from "./validate-py.mjs";
 
 /** The report the coverage step writes, relative to the server directory. */
 export const REPORT = "coverage.json";
@@ -186,7 +207,8 @@ export function summarize(results) {
       `  FAIL  ${r.server} — ${r.failedStep}${r.detail ? ` (${r.detail})` : ""}`,
     );
     for (const failure of r.failures ?? []) {
-      lines.push(`          src/${r.server}/${failure}`);
+      // Edit 2: the report's own path, no src/<server>/ prefix.
+      lines.push(`          ${failure}`);
     }
   }
   const exitCode = results.some((r) => r.failedStep !== undefined) ? 1 : 0;
@@ -198,15 +220,17 @@ function main() {
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
   );
-  const srcDir = path.join(repoRoot, "src");
-  const selection = selectServers(
-    process.argv.slice(2),
-    discoverServers(srcDir),
-  );
-  if ("error" in selection) {
-    console.error(`[coverage:py] ${selection.error}`);
+  // Edit 1: one package, at the repo root; no arguments.
+  if (process.argv.length > 2) {
+    console.error(
+      `[coverage:py] takes no arguments (this repo is one package); got: ${process.argv
+        .slice(2)
+        .join(" ")}`,
+    );
     return 2;
   }
+  const selection = { servers: [path.basename(repoRoot)] };
+  const srcDir = path.dirname(repoRoot);
   const results = coverServers({ servers: selection.servers, srcDir });
   const { lines, exitCode } = summarize(results);
   console.log(["\n[coverage:py] summary", ...lines].join("\n"));

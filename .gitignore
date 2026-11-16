@@ -7,3 +7,8 @@ build/
 *.egg
 .ruff_cache/
 prufrock-output/
+coverage.json
+.coverage
+.pytest_cache/
+.venv/
+node_modules/

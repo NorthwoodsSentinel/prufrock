@@ -1,3 +1,8 @@
+// prufrock (NOR-391): modelcontextprotocol/servers' `scripts/validate-py.test.mjs`
+// (commit e1d154ee, blob bc9b702f5e5fb6ec18bdef22b8d2ce8fdd5f8bed), copied
+// byte-for-byte and then edited with the script: the `discoverServers` and
+// `selectServers` tests are removed with those functions, and one test is
+// added for the no-arguments rule. Every other test is his, unchanged.
 /**
  * Unit tests for scripts/validate-py.mjs (#4865). Run with
  * `node --test scripts/validate-py.test.mjs` — no dependencies, and no `uv`
@@ -5,16 +10,17 @@
  * against `node` itself.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, describe, it } from "node:test";
 
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
 import {
   STEPS,
-  discoverServers,
   runCommand,
-  selectServers,
   summarize,
   validateServers,
 } from "./validate-py.mjs";
@@ -43,43 +49,6 @@ describe("STEPS", () => {
     for (const step of STEPS.filter((s) => s.argv[1] === "run")) {
       assert.equal(step.argv[2], "--frozen", step.name);
     }
-  });
-});
-
-describe("discoverServers", () => {
-  it("finds only directories holding a pyproject.toml, sorted", () => {
-    const src = path.join(scratch, "src");
-    for (const name of ["time", "fetch", "everything", "git"]) {
-      mkdirSync(path.join(src, name), { recursive: true });
-    }
-    for (const name of ["time", "fetch", "git"]) {
-      writeFileSync(path.join(src, name, "pyproject.toml"), "");
-    }
-    writeFileSync(path.join(src, "everything", "package.json"), "{}");
-    writeFileSync(path.join(src, "pyproject.toml"), ""); // a file, not a server
-    assert.deepEqual(discoverServers(src), ["fetch", "git", "time"]);
-  });
-});
-
-describe("selectServers", () => {
-  const available = ["fetch", "git", "time"];
-
-  it("defaults to every server", () => {
-    assert.deepEqual(selectServers([], available), { servers: available });
-  });
-
-  it("keeps the named servers", () => {
-    assert.deepEqual(selectServers(["git"], available), { servers: ["git"] });
-  });
-
-  it("rejects a name that is not a Python server", () => {
-    const result = selectServers(["git", "memory"], available);
-    assert.ok("error" in result);
-    assert.match(result.error, /not a Python server: memory/);
-  });
-
-  it("fails when there is nothing to validate", () => {
-    assert.ok("error" in selectServers([], []));
   });
 });
 
@@ -197,5 +166,17 @@ describe("runCommand", () => {
     const result = runCommand([notExecutable], scratch);
     assert.equal(result.ok, false);
     assert.match(result.detail, /EACCES/);
+  });
+});
+
+// prufrock (NOR-391): the command takes no arguments.
+describe("main", () => {
+  it("refuses an argument instead of ignoring it", () => {
+    const script = fileURLToPath(new URL("./validate-py.mjs", import.meta.url));
+    const result = spawnSync(process.execPath, [script, "fetch"], {
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /takes no arguments/);
   });
 });

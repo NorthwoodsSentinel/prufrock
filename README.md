@@ -86,6 +86,15 @@ The fleet backend reads images through Claude Code's Read tool: JPEG, PNG, GIF a
 - `bun` and a PAI install (default fleet backend), or an Anthropic API key with `PRUFROCK_BACKEND=api`
 - dlib + face_recognition (for facial clustering)
 
+## Development
+
+The checks need [uv](https://docs.astral.sh/uv/) and Node.js. `npm ci --ignore-scripts` installs the gate's one Node dependency; `uv` installs Python and everything else from `uv.lock`.
+
+- `npm run format` formats the Python code (`ruff format`).
+- `npm run local:gate` runs every check before a push: lint, format check, type check (`pyright`), tests, build, sign-off check, and per-file coverage (at least 90% of lines and of branches in every file).
+
+Tests use synthetic data only and never call a model. Rules for contributors and agents are in [AGENTS.md](AGENTS.md); where the tooling came from is in [PROVENANCE.md](PROVENANCE.md).
+
 ## License
 
 MIT

@@ -1,3 +1,8 @@
+// prufrock (NOR-391): fleet-mcp's copy of this file (origin/main f1bea96,
+// blob 82686195e6538f7f2f7fad30bf62a4701d2ed630), copied unchanged; this
+// paragraph is the only edit. The fleet-mcp and WALL-E attack-case files its
+// header names are not brought in (follow-up F4 in the NOR-391 PR).
+//
 // fleet-mcp (NOR-355): WALL-E's copy of this file (NorthwoodsSentinel/walle
 // origin/main 5fb8747, blob 8f5d0115a688dc9853956d06739e876ad514d870), copied
 // byte-for-byte with the guard and kept as WALL-E has it: the guard's

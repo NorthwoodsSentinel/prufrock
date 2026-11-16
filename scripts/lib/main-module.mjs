@@ -43,6 +43,12 @@
 // b87aa54ce26ce2877f5814369d378373074f1d18), WALL-E's symlink edit above
 // included. This paragraph is the only edit. Record: PROVENANCE-CHECK.md,
 // section 4.
+//
+// In prufrock (NOR-391): copied unchanged from NorthwoodsSentinel/fleet-mcp
+// origin/main f1bea96, scripts/lib/main-module.mjs (blob
+// b35c2374c50999bf1f5a1a2fd19d990ff960b63f), because scripts/dco-check.mjs
+// and scripts/verify-coverage-scope-py.mjs import it. This paragraph is the
+// only edit.
 
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
