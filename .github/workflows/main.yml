@@ -1,11 +1,12 @@
 # CI for prufrock (NOR-391).
 #
-# Copied from NorthwoodsSentinel/fleet-mcp's .github/workflows/main.yml
-# (origin/main f1bea96, blob 7932a098e637e270effd73a6bb05c2ce8b7a9108), which
-# took its shape from the MCP Inspector's CI workflow (commit d330df96): the
-# same file name and workflow name, least-privilege `permissions`, a pinned
-# runtime stated once, every action pinned to a commit SHA with its exact
-# release, and a `timeout-minutes` on the job. The Python steps come from
+# Shaped after the MCP Inspector's CI workflow
+# (modelcontextprotocol/inspector, commit d330df96, .github/workflows/main.yml,
+# blob c1eeb58a6775d95cce43f6f99fc09cfec2dfccc1): the same file name and
+# workflow name, least-privilege `permissions`, a pinned runtime stated once,
+# and a `timeout-minutes` on the job. Every action is pinned to a commit SHA
+# with its exact release (his rule for credentialed jobs, applied to every job
+# here; AGENTS.md says why). The Python steps come from
 # modelcontextprotocol/servers' .github/workflows/python.yml (commit e1d154ee,
 # blob 219e515924c33ab4b888ed57a0177495955f5537): uv through
 # astral-sh/setup-uv on his major (v7), Python from `.python-version` through
@@ -22,11 +23,15 @@
 # checked by .github/workflows/dco.yml instead. No Inspector smoke: prufrock
 # is not an MCP server.
 #
-# This workflow holds no secret, can write nothing, and deploys nothing. It
+# This workflow holds no secret, has a read-only token, and deploys nothing.
+# The one thing it saves is setup-uv's dependency cache (its default,
+# `enable-cache: auto`, as in the servers repo): an Actions cache, scoped by
+# GitHub to the branch that wrote it, so a pull request's cache is not read by
+# `main`. It
 # never calls a model: the tests replace the fleet bridge and the anthropic
 # package with fakes, so nothing here needs Bun, a PAI install or an API key.
 #
-# Limits, accepted as in fleet-mcp: a pull request that edits this file, or
+# Limits, accepted: a pull request that edits this file, or
 # the scripts it runs, is judged by the edited version (the control is review
 # of the diff). The check is not REQUIRED for merging until the owner sets a
 # repository ruleset; the job name `validate` below is the name that ruleset
@@ -40,9 +45,9 @@ on:
   # No branch or path filter: a required check that a filter skips would stay
   # "expected" forever.
   pull_request:
-  # Pushes limited to the branch pull requests merge into, so a PR branch is
-  # not run twice (fleet-mcp's reason for departing from the Inspector's bare
-  # `push:`).
+  # The Inspector uses a bare `push:`. Here that would run every pull request
+  # branch twice (once for the push, once for the pull request), so pushes are
+  # limited to the branch pull requests merge into.
   push:
     branches: [main]
 

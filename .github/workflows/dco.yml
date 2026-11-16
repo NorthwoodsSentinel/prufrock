@@ -73,36 +73,16 @@
 #
 # Copied from modelcontextprotocol/inspector at commit
 # d330df9617e44ec893bc1a53618662239342d433, .github/workflows/dco.yml (blob
-# 360fe4f17c2233f041549e60128becd57f5c95b1), by copy then edit. His reasoning
-# on `pull_request` versus `pull_request_target` above is kept as written; the
-# issue numbers in it are his repo's. Every edit is listed in
-# docs/DESIGN-nor-349-signoff.md, section 3; record: PROVENANCE-CHECK.md.
-#
-# In fleet-mcp (NOR-357): copied from NorthwoodsSentinel/walle origin/main
-# 5fb8747, .github/workflows/dco.yml (blob
-# 83356971c4352fe1d27fd4c62d74b61a3fa43ef7). The design named above is
-# WALL-E's, kept verbatim in docs/. Edits, comments only: the ruleset
-# paragraph (this repo has none yet, NOR-356), who merges (this repo's
-# Contributing rule), where `main`'s role is recorded, the push step's
-# ruleset remark, and this paragraph.
-# Triggers, jobs, steps and pins are WALL-E's unchanged. The push job's range
-# is `before..after`, so the unsigned commits from before this repo's rules
-# file, all reachable from `before`, are never in it. Record:
-# PROVENANCE-CHECK.md, section 4.
-#
-# In prufrock (NOR-391): copied from NorthwoodsSentinel/fleet-mcp origin/main
-# f1bea96, .github/workflows/dco.yml (blob
-# 9d3165be6059d7798e32719ccb1510ba5db2294c). The paragraphs above are
-# fleet-mcp's and WALL-E's; their ticket numbers and record files are theirs.
-# Edits: this paragraph; the ruleset remarks (here too no ruleset exists yet,
-# and setting one is the owner's act); the trade-off paragraph's "who merges"
-# (in this public repo an agent opens a pull request and the owner merges,
-# AGENTS.md "Only the owner does"); and ONE line of behaviour: the PR job's
-# checkout is back to the source's `persist-credentials: false`. fleet-mcp
-# kept the credential because it is private and its second `git fetch` needs
-# it; this repo is public, which is the source's own case, so the fetch needs
-# no token. The unsigned commits already on `main` from before this file are
-# never in a PR's range or a push's `before..after`. Record: PROVENANCE.md.
+# 360fe4f17c2233f041549e60128becd57f5c95b1), by copy then edit (NOR-391). His
+# reasoning on `pull_request` versus `pull_request_target` above is kept as
+# written; the issue numbers in it are his repo's. Edits for this repo: the
+# branch is `main` (his `v2/main`) and the PR job runs on every base (the
+# paragraph above says why); the ruleset remarks (no ruleset exists here yet,
+# and setting one is the owner's act); who merges (the owner, AGENTS.md "Only
+# the owner does"); and the push job's range is `before..after`, so the
+# unsigned commits already on `main` from before this file are never in it.
+# His `persist-credentials: false` on the PR job's checkout is kept: this repo
+# is public, his own case, so the fetch needs no token. Record: PROVENANCE.md.
 name: DCO
 
 on:
@@ -136,11 +116,9 @@ jobs:
         with:
           ref: ${{ github.base_ref }}
           fetch-depth: 0
-          # The source's value. fleet-mcp set `true` because it is private and
-          # the next step's `git fetch origin` needed the credential; this repo
-          # is public, the source's own case, so the fetch needs no token and
-          # none is left in the checkout. A failed fetch fails the step: red,
-          # never green.
+          # The source's value: this repo is public, so the next step's
+          # `git fetch origin` needs no token and none is left in the
+          # checkout. A failed fetch fails the step: red, never green.
           persist-credentials: false
 
       - name: Fetch the PR's commits (read as data, never checked out)

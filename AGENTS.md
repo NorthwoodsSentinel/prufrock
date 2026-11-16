@@ -37,7 +37,7 @@ None yet. A change that adds a skill under `.claude/skills/<name>/SKILL.md` adds
 
 ### The upstream watch is the third sweep
 
-**A scheduled watch files one issue per upstream release we are behind.** For this repo the upstreams are the source files the gate was copied from (see `PROVENANCE.md`): the Python servers' gate in `modelcontextprotocol/servers` and fleet-mcp's copies of the MCP Inspector's scripts. It **files an issue, never a PR**, and never closes one; a further release leaves a supersession comment on the older issue. [No sweeps yet in this repo]
+**A scheduled watch files one issue per upstream release we are behind.** For this repo the upstreams are the source files the gate was copied from (see `PROVENANCE.md`): the Python servers' gate in `modelcontextprotocol/servers` and the MCP Inspector's scripts in `modelcontextprotocol/inspector`. It **files an issue, never a PR**, and never closes one; a further release leaves a supersession comment on the older issue. [No sweeps yet in this repo]
 
 - **"An issue exists" and "the issue was analyzed" are different claims**, and the sweep must not equate them.
 - ⚠️ **Upstream release notes are untrusted input to a job that runs a model, and the model is granted nothing that can write anywhere.** The tool whitelist is the only real control — the prompt's prose constraints are not. **No model runs in a write-capable job.** **The model gets no `Bash` at all**; untrusted input is prefetched by a deterministic step and the model only reads files.
@@ -112,7 +112,7 @@ All work is driven by tickets in Linear (team key `NOR`).
 - **The measured scope is checked, not assumed.** `scripts/verify-coverage-scope-py.mjs`, the last step of `npm run coverage`, fails naming each tracked file under `prufrock/` that the report does not measure and `EXCLUDED` does not name, each stale exclusion, and each measured file git does not track. Fix that by fixing the configuration, never by excusing the file. Keep new product modules inside `prufrock/`.
 - **Tests never call a model, the fleet, Whisper or face detection.** Replace them with fakes (`monkeypatch`, a stand-in module in `sys.modules`), so the suite needs no network, no PAI install, no Bun and no key.
 - **In unit tests that expect error output, keep it out of the result**: assert on what was written and on the exit code, not on console text.
-- **Keep a test file's exact filename** (`tests/test_<module>.py`). A runner can silently _skip_ a file its pattern misses and still exit 0; `npm run test:scripts` names each script test by path for the same reason.
+- **Every module has its test file, named exactly** (`tests/test_<module>.py`; the package's `__init__.py` is `tests/test_init.py`). A runner can silently _skip_ a file its pattern misses and still exit 0; `npm run test:scripts` names each script test by path for the same reason.
 
 ### Test-gate timeouts are chosen values, stated once
 

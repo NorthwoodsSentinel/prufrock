@@ -4,23 +4,12 @@
 // format and its parser only mean anything together. Run via
 // `npm run test:scripts`.
 //
-// In this repo (WALL-E, NOR-349): copied unchanged from
-// modelcontextprotocol/inspector at commit
-// d330df9617e44ec893bc1a53618662239342d433, scripts/dco-check.test.mjs (blob
-// 510b5e885187541a99ccf99910c88a1465c76f85). This block is the only edit.
-// The `origin/v2/main` strings below are argument values only. Codex's attack
-// cases for this check are in tools/dco.attack.test.ts. Record:
-// PROVENANCE-CHECK.md.
-//
-// In fleet-mcp (NOR-357): copied unchanged from NorthwoodsSentinel/walle
-// origin/main 5fb8747, scripts/dco-check.test.mjs (blob
-// 858418417bfc542d8d3f7d0b76416b4bfdcf5f8a). This paragraph is the only edit.
-// Run here by `npm run test:scripts`, one `node --test <file>` per file.
-// Record: PROVENANCE-CHECK.md, section 4.
-//
-// In prufrock (NOR-391): copied unchanged from NorthwoodsSentinel/fleet-mcp
-// origin/main f1bea96, scripts/dco-check.test.mjs (blob
-// 7fd4bd08dd3c7bddf14c1076ad7f2a7894ccec50). This paragraph is the only edit.
+// In prufrock (NOR-391): copied unchanged from modelcontextprotocol/inspector
+// at commit d330df9617e44ec893bc1a53618662239342d433,
+// scripts/dco-check.test.mjs (blob 510b5e885187541a99ccf99910c88a1465c76f85).
+// This paragraph is the only edit. The `origin/v2/main` strings below are
+// argument values only. Run by `npm run test:scripts`, one
+// `node --test <file>` per file. Record: PROVENANCE.md.
 
 import { after, test } from "node:test";
 import assert from "node:assert/strict";

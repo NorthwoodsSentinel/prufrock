@@ -1,36 +1,21 @@
 #!/usr/bin/env node
-// prufrock (NOR-391): NorthwoodsSentinel/fleet-mcp's copy of this file
-// (origin/main f1bea96, blob 011a04c44ce9769bd15f8bfa82cb27d89162e957),
-// copied byte-for-byte in the commit before this one and then edited. Its
-// header follows unchanged, and so does every line of code. Edits: this
-// paragraph, and the ticket named in the failure message (NOR-391 instead of
-// fleet-mcp's NOR-355). fleet-mcp's edit 1 (every job is checked) holds here
-// for this repo's own reason: the owner's scope for NOR-381 asks for every
-// action pinned to a SHA with its exact version, and this is a public repo
-// whose CI result vouches for the code people install. No job here holds a
-// credential; the OK line still counts credentialed jobs.
-//
-// fleet-mcp (NOR-355): this file is WALL-E's `scripts/verify-action-pins.mjs`
-// (NorthwoodsSentinel/walle, origin/main 5fb8747, blob
-// 9aea9a383b72c27d422584e1224bd6de3baa415b), copied byte-for-byte and then
-// edited. WALL-E's copy is itself the MCP Inspector's guard
+// prufrock (NOR-391): the MCP Inspector's guard
 // (modelcontextprotocol/inspector, commit
 // d330df9617e44ec893bc1a53618662239342d433, blob
-// a8988d38a3f9633c47f2bdad6e63045ca6f21db2) with WALL-E's edits 1-5 below.
-// The commit before the edits holds the unedited copy; `PROVENANCE-CHECK.md`
-// has the record. The Inspector's header follows unchanged below this block,
-// so "#NNNN" numbers are HIS issue numbers and `dependency-refresh` is HIS
-// monthly sweep, which this repo does not have yet (NOR-363).
+// a8988d38a3f9633c47f2bdad6e63045ca6f21db2), adapted. The Inspector's header
+// follows unchanged below this block, so "#NNNN" numbers are HIS issue numbers
+// and `dependency-refresh` is HIS monthly sweep, which this repo does not have.
+// Record: PROVENANCE.md.
 //
-// What differs from the Inspector, and why (design:
-// docs/DESIGN-nor-355-check.md, section 6):
+// What differs from the Inspector, and why:
 //
-//   1. EVERY job is checked, not only a credentialed one. In this repo the
-//      checked commit is the one the owner deploys as the Worker, so the
-//      workflow vouches for code that runs with the Worker's bindings, and a
-//      guard limited to credentialed jobs would check none (AGENTS.md, the
-//      action-pin rule). Anything that passes this passes his rule too.
-//      `credentialedJobs` is kept and still counted in the OK line.
+//   1. EVERY job is checked, not only a credentialed one. This is a public
+//      repo whose CI result vouches for the code people install, and the
+//      owner's scope for this work asks for every action pinned to a SHA with
+//      its exact version; no job here holds a credential, so a guard limited
+//      to credentialed jobs would check none. Anything that passes this
+//      passes his rule too. `credentialedJobs` is kept and still counted in
+//      the OK line.
 //   2. A local `./…` ref is a finding instead of being skipped. His own warning
 //      below calls the first one "a silent bypass"; none exists here.
 //   3. Zero workflow files is a failure: a guard that read nothing must not
@@ -41,12 +26,12 @@
 //   5. `SHA_REF` is defined here instead of imported from his
 //      `dependency-refresh.mjs` (line 111 of blob cd042802), which is not
 //      brought in.
-//   6. (fleet-mcp) Each entry is opened ONCE, with O_NOFOLLOW and O_NONBLOCK,
-//      and checked with fstat on that descriptor before it is read. WALL-E's
-//      copy checked the path with lstat and then re-opened the path to read
-//      it; WALL-E's final Codex audit (finding 1, HIGH) showed a symlink
-//      swapped in between is followed. One descriptor removes the window;
-//      O_NONBLOCK keeps a FIFO from hanging the gate.
+//   6. Each entry is opened ONCE, with O_NOFOLLOW and O_NONBLOCK, and checked
+//      with fstat on that descriptor before it is read. Checking the path with
+//      lstat and then re-opening it would follow a symlink swapped in between
+//      (found by an adversarial review); one descriptor removes the window,
+//      and O_NONBLOCK keeps a FIFO from hanging the gate.
+//   7. The failure message names this repo's ticket.
 //
 // A YAML alias anywhere in a job stays a finding, exactly as he has it and for
 // his stated reason (see `unpinnedRefs`).
