@@ -1,8 +1,9 @@
 """Intake — inventory and process incoming materials."""
+
 import json
 import shutil
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from PIL import Image
 from rich.console import Console
@@ -38,7 +39,7 @@ def resize_image(src: Path, dst: Path, max_dim: int = MAX_DIMENSION) -> dict:
     needs_resize = max(img.size) > max_dim
 
     if needs_resize:
-        img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+        img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     img.save(dst, quality=92)
@@ -68,7 +69,8 @@ def run_intake(source: Path, output: Path):
 
     # Collect all files recursively, skip output dir
     files = sorted(
-        f for f in source.rglob("*")
+        f
+        for f in source.rglob("*")
         if f.is_file() and not str(f).startswith(str(output))
     )
 
@@ -91,7 +93,7 @@ def run_intake(source: Path, output: Path):
                 meta = resize_image(f, dst)
                 item["processed_path"] = str(dst.relative_to(output))
                 item.update(meta)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # the error is recorded on the item in manifest.json
                 item["error"] = str(e)
         else:
             # Copy non-photo files as-is

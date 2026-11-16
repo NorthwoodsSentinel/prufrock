@@ -1,12 +1,14 @@
 """Voice — extract voice profile from zoom recording or transcript."""
+
 import json
-import sys
 import re
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
+
+from rich.console import Console
 
 from .llm import complete
-from rich.console import Console
 
 console = Console()
 
@@ -51,12 +53,24 @@ def transcribe_audio(audio_path: Path, output_dir: Path) -> Path | None:
     """Transcribe audio file using Whisper if available."""
     try:
         import subprocess
+
         transcript_path = output_dir / "zoom-transcript.txt"
 
         result = subprocess.run(
-            ["whisper", str(audio_path), "--model", "base", "--output_format", "txt",
-             "--output_dir", str(output_dir)],
-            capture_output=True, text=True, timeout=600,
+            [
+                "whisper",
+                str(audio_path),
+                "--model",
+                "base",
+                "--output_format",
+                "txt",
+                "--output_dir",
+                str(output_dir),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            check=False,
         )
 
         # Whisper outputs as filename.txt
@@ -65,12 +79,16 @@ def transcribe_audio(audio_path: Path, output_dir: Path) -> Path | None:
             whisper_output.rename(transcript_path)
             return transcript_path
 
-        console.print(f"[yellow]Whisper output not found. stderr: {result.stderr[:200]}[/yellow]")
+        console.print(
+            f"[yellow]Whisper output not found. stderr: {result.stderr[:200]}[/yellow]"
+        )
         return None
     except FileNotFoundError:
-        console.print("[yellow]Whisper not installed. Install with: pip install openai-whisper[/yellow]")
+        console.print(
+            "[yellow]Whisper not installed. Install with: pip install openai-whisper[/yellow]"
+        )
         return None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # reported; the caller stops on None
         console.print(f"[red]Transcription failed: {e}[/red]")
         return None
 
@@ -82,17 +100,22 @@ def analyze_voice(transcript: str, client_name: str) -> dict | None:
         if len(transcript) > 80_000:
             transcript = transcript[:40_000] + "\n\n[...]\n\n" + transcript[-40_000:]
 
-        text = complete(VOICE_ANALYSIS_PROMPT, f"Speaker: {client_name}\n\nTranscript:\n\n{transcript}",
-                        level="standard", timeout_s=300, max_tokens=4096)
+        text = complete(
+            VOICE_ANALYSIS_PROMPT,
+            f"Speaker: {client_name}\n\nTranscript:\n\n{transcript}",
+            level="standard",
+            timeout_s=300,
+            max_tokens=4096,
+        )
 
         # Try to extract JSON from response
-        json_match = re.search(r'\{[\s\S]*\}', text)
+        json_match = re.search(r"\{[\s\S]*\}", text)
         if json_match:
             return json.loads(json_match.group())
 
         # If no JSON, return the raw analysis as structured dict
         return {"raw_analysis": text}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # reported; run_voice writes stats only and exits 1 on None
         console.print(f"[red]Voice analysis failed: {e}[/red]")
         return None
 
@@ -139,22 +162,93 @@ def run_voice(source: Path, output: Path, client_name: str):
     console.print(f"Transcript: {word_count:,} words\n")
 
     # Basic statistics
-    sentences = re.split(r'[.!?]+', transcript)
+    sentences = re.split(r"[.!?]+", transcript)
     words_per_sentence = [len(s.split()) for s in sentences if s.strip()]
-    avg_sentence_len = sum(words_per_sentence) / len(words_per_sentence) if words_per_sentence else 0
+    avg_sentence_len = (
+        sum(words_per_sentence) / len(words_per_sentence) if words_per_sentence else 0
+    )
 
     # Word frequency
-    words = re.findall(r'\b[a-z]+\b', transcript.lower())
-    common_words = {"the", "a", "an", "is", "was", "are", "were", "be", "been",
-                    "have", "has", "had", "do", "does", "did", "will", "would",
-                    "could", "should", "may", "might", "to", "of", "in", "for",
-                    "on", "with", "at", "by", "from", "and", "or", "but", "not",
-                    "that", "this", "it", "i", "you", "he", "she", "we", "they",
-                    "my", "your", "his", "her", "our", "their", "me", "him",
-                    "us", "them", "so", "just", "like", "know", "think", "get",
-                    "go", "can", "all", "about", "up", "out", "if", "what",
-                    "when", "how", "which", "there", "then", "than", "very"}
-    distinctive_words = Counter(w for w in words if w not in common_words and len(w) > 3)
+    words = re.findall(r"\b[a-z]+\b", transcript.lower())
+    common_words = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "was",
+        "are",
+        "were",
+        "be",
+        "been",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "to",
+        "of",
+        "in",
+        "for",
+        "on",
+        "with",
+        "at",
+        "by",
+        "from",
+        "and",
+        "or",
+        "but",
+        "not",
+        "that",
+        "this",
+        "it",
+        "i",
+        "you",
+        "he",
+        "she",
+        "we",
+        "they",
+        "my",
+        "your",
+        "his",
+        "her",
+        "our",
+        "their",
+        "me",
+        "him",
+        "us",
+        "them",
+        "so",
+        "just",
+        "like",
+        "know",
+        "think",
+        "get",
+        "go",
+        "can",
+        "all",
+        "about",
+        "up",
+        "out",
+        "if",
+        "what",
+        "when",
+        "how",
+        "which",
+        "there",
+        "then",
+        "than",
+        "very",
+    }
+    distinctive_words = Counter(
+        w for w in words if w not in common_words and len(w) > 3
+    )
 
     stats = {
         "total_words": word_count,
@@ -172,7 +266,9 @@ def run_voice(source: Path, output: Path, client_name: str):
     if not voice_profile:
         stats_path = output / "voice-stats.json"
         stats_path.write_text(json.dumps({"statistics": stats}, indent=2))
-        console.print(f"[bold red]Voice analysis failed. No voice-profile.json written. Statistics only: {stats_path}[/bold red]")
+        console.print(
+            f"[bold red]Voice analysis failed. No voice-profile.json written. Statistics only: {stats_path}[/bold red]"
+        )
         sys.exit(1)
     voice_profile["statistics"] = stats
 
@@ -182,4 +278,6 @@ def run_voice(source: Path, output: Path, client_name: str):
 
     console.print(f"\nVoice profile: [bold]{profile_path}[/bold]")
     console.print(f"Avg sentence length: [bold]{avg_sentence_len:.1f} words[/bold]")
-    console.print(f"Top vocabulary: [bold]{', '.join(w for w, _ in distinctive_words.most_common(10))}[/bold]\n")
+    console.print(
+        f"Top vocabulary: [bold]{', '.join(w for w, _ in distinctive_words.most_common(10))}[/bold]\n"
+    )

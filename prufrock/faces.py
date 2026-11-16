@@ -1,8 +1,9 @@
 """Faces — facial recognition clustering across photos."""
+
 import json
 import shutil
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 from PIL import Image
 from rich.console import Console
@@ -41,7 +42,7 @@ def is_likely_photo(path: Path) -> bool:
         crop_y1 = int(h * 0.2)
         crop_y2 = int(h * 0.8)
         center = gray.crop((0, crop_y1, w, crop_y2))
-        pixels = list(center.getdata())
+        pixels = list(center.getdata())  # pyright: ignore[reportArgumentType]  # Pillow's stubs give ImagingCore no __iter__; it iterates at runtime
 
         if not pixels:
             return True
@@ -51,11 +52,9 @@ def is_likely_photo(path: Path) -> bool:
 
         # Book pages have high mean brightness (white paper) with moderate variance (text)
         # Photos typically have lower mean and higher variance (scenes, colors)
-        if mean_val > 180 and variance < 3000:
-            return False  # Likely a bright document/book page
-
-        return True
-    except Exception:
+        # A bright, low-variance sample is likely a document/book page.
+        return not (mean_val > 180 and variance < 3000)
+    except Exception:  # noqa: BLE001  # an image that cannot be analysed is kept as a photo, by design
         return True  # If we can't analyze, include it
 
 
@@ -76,8 +75,7 @@ def run_faces(source: Path, output: Path, tolerance: float):
     output.mkdir(parents=True, exist_ok=True)
 
     all_images = sorted(
-        f for f in source.rglob("*")
-        if f.is_file() and f.suffix.lower() in PHOTO_EXTS
+        f for f in source.rglob("*") if f.is_file() and f.suffix.lower() in PHOTO_EXTS
     )
 
     if not all_images:
@@ -93,7 +91,9 @@ def run_faces(source: Path, output: Path, tolerance: float):
         else:
             skipped += 1
 
-    console.print(f"Found [bold]{len(all_images)}[/bold] images, [bold]{skipped}[/bold] skipped (book/document pages)")
+    console.print(
+        f"Found [bold]{len(all_images)}[/bold] images, [bold]{skipped}[/bold] skipped (book/document pages)"
+    )
     console.print(f"Scanning [bold]{len(images)}[/bold] likely photographs\n")
 
     if not images:
@@ -118,7 +118,7 @@ def run_faces(source: Path, output: Path, tolerance: float):
 
             if locations:
                 console.print(f"  {img_path.name}: {len(locations)} face(s)")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  # one unreadable image is reported and the rest still scanned
             console.print(f"  [red]{img_path.name}: {e}[/red]")
 
     if not all_encodings:
@@ -144,7 +144,9 @@ def run_faces(source: Path, output: Path, tolerance: float):
             if assigned[j]:
                 continue
 
-            distance = face_recognition.face_distance([all_encodings[i]], all_encodings[j])[0]
+            distance = face_recognition.face_distance(
+                [all_encodings[i]], all_encodings[j]
+            )[0]
             if distance <= tolerance:
                 assigned[j] = True
                 clusters[cluster_id].append(j)
@@ -152,7 +154,11 @@ def run_faces(source: Path, output: Path, tolerance: float):
         cluster_id += 1
 
     # Output clusters
-    manifest = {"clusters": [], "total_faces": len(all_encodings), "total_images": len(images)}
+    manifest = {
+        "clusters": [],
+        "total_faces": len(all_encodings),
+        "total_images": len(images),
+    }
 
     for cid, face_indices in sorted(clusters.items(), key=lambda x: -len(x[1])):
         cluster_dir = output / f"person-{cid + 1:03d}"
@@ -166,14 +172,18 @@ def run_faces(source: Path, output: Path, tolerance: float):
                 shutil.copy2(src_file, dst_file)
             cluster_files.append(str(src_file.relative_to(source)))
 
-        manifest["clusters"].append({
-            "id": cid + 1,
-            "name": None,  # Populated during zoom ID session
-            "face_count": len(face_indices),
-            "appearances_in": list(set(cluster_files)),
-        })
+        manifest["clusters"].append(
+            {
+                "id": cid + 1,
+                "name": None,  # Populated during zoom ID session
+                "face_count": len(face_indices),
+                "appearances_in": list(set(cluster_files)),
+            }
+        )
 
-        console.print(f"  Person {cid + 1}: {len(face_indices)} appearance(s) across {len(set(cluster_files))} photo(s)")
+        console.print(
+            f"  Person {cid + 1}: {len(face_indices)} appearance(s) across {len(set(cluster_files))} photo(s)"
+        )
 
     # Write manifest
     manifest_path = output / "face-clusters.json"
@@ -181,14 +191,18 @@ def run_faces(source: Path, output: Path, tolerance: float):
 
     # Write ID worksheet for zoom session
     worksheet = output / "id-worksheet.md"
-    lines = ["# Face Identification Worksheet",
-             "## For Zoom ID Session with Client\n",
-             "Review each cluster folder and identify the person.\n"]
+    lines = [
+        "# Face Identification Worksheet",
+        "## For Zoom ID Session with Client\n",
+        "Review each cluster folder and identify the person.\n",
+    ]
     for cluster in manifest["clusters"]:
-        lines.append(f"### Person {cluster['id']} ({cluster['face_count']} appearances)")
-        lines.append(f"- **Name:** ___________________")
-        lines.append(f"- **Relationship:** ___________________")
-        lines.append(f"- **Notes:** ___________________")
+        lines.append(
+            f"### Person {cluster['id']} ({cluster['face_count']} appearances)"
+        )
+        lines.append("- **Name:** ___________________")
+        lines.append("- **Relationship:** ___________________")
+        lines.append("- **Notes:** ___________________")
         lines.append(f"- Photos: {', '.join(cluster['appearances_in'][:5])}")
         if len(cluster["appearances_in"]) > 5:
             lines.append(f"  ... and {len(cluster['appearances_in']) - 5} more")
